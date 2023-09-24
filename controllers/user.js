@@ -1,17 +1,19 @@
 // Importar dependencias y modulos
-const bcrypt = require("bcrypt")
+const bcrypt = require("bcrypt");
+const mongoosePagination = require("mongoose-pagination");
 
 // Importar modelos
-const User = require("../models/user")
+const User = require("../models/user");
 
 // Importar servicios
-const jwt = require("../services/jwt")
+const jwt = require("../services/jwt");
 
 // Acciones de prueba
 const pruebaUser = (req, res) => {
     return res.status(200).send({
-        message: "Mensaje enviado desde: controllers/user.js"
-    })
+        message: "Mensaje enviado desde: controllers/user.js",
+        usuario: req.user
+    });
 }
 
 // Registro de usuarios
@@ -28,10 +30,12 @@ const register = (req, res) => {
     }
 
         // Control usuarios duplicados
-        User.find({ $or: [
-            {email: params.email.toLowerCase()},
-            {nick: params.nick.toLowerCase()}
-        ]}).exec(async(error, users) => {
+        User.find({ 
+            $or: [
+                {email: params.email.toLowerCase()},
+                {nick: params.nick.toLowerCase()}
+            ]
+        }).exec(async(error, users) => {
 
             if(error) return res.status(500).json({status: "error", message: "Error en la consulta de usuarios"});
 
@@ -111,9 +115,117 @@ const login = (req, res) => {
     
 }
 
+const profile = (req, res) => {
+    // Recibir el parametro del id de usuario por la url
+    const id = req.params.id;
+
+    // Consulta para sacar los datos del usuario
+    //const userProfile = await User.findById(id)
+
+    User.findById(id)
+    .select({password: 0, role: 0})
+    .exec((error, userProfile) => {
+        if(error || !userProfile){
+            return res.status(404).send({
+                status: "error",
+                message: "El usuario no existe o hay un error"
+            });
+        }
+        // Devolver el resultado
+        return res.status(200).send({
+            status: "success",
+            user: userProfile
+        });
+
+    });
+
+    
+}
+
+
+const list = (req, res) => {
+    // Controlar en que pagina estamos
+    let page = 1;
+    if(req.params.page){
+        page = req.params.page;
+    }
+    page = parseInt(page);
+    // Consulta con mongoose paginate
+    let itemsPerPage = 5;
+
+    User.find().sort('_id').paginate(page, itemsPerPage, (error, users, total) => {
+          if(error || !users){
+            return res.status(404).send({
+                status: "error",
+                message: "No hay usuarios disponibles",
+                error
+            });
+          }
+        // Devolver el resultado 
+        return res.status(200).send({
+            status: "success",
+            users,
+            page,
+            itemsPerPage,
+            total,
+            pages: Math.ceil(total/itemsPerPage)
+        });
+    });
+
+    
+}
+
+const update = (req, res) => {
+    // Recoger info del usuario a actualizar
+    let userIdentity = req.user;
+    let userToUpdate = req.body;
+
+    // Eliminar campos sobrantes
+    delete userToUpdate.iat;
+    delete userToUpdate.exp;
+
+    // Comprobar si el usuario ya existe
+    User.find({
+        $or: [
+            { email: userToUpdate.email.toLowerCase() },
+            { nick: userToUpdate.nick.toLowerCase() }
+        ]
+    }).exec(async (error, users) => {
+        if (error) return res.status(500).json({ status: "error", message: "Error en la consulta de usuarios"});
+        /*
+        if (users && users.length >= 1) {
+            return res.status(200).send({
+                status: "success",
+                message: "El usuario ya existe"
+            });
+        }
+        */
+
+        if(userToUpdate.password){
+            let pwd = await bcrypt.hash(params.password, 10);
+            params.password = pwd;
+        }
+
+        // Buscar y actualizar
+        return res.status(200).send({
+            status: "success",
+            message: "Metodo de actualizar usuario",
+            userToUpdate
+        });
+        
+
+    });
+
+    
+}
+
+
 // Exportar acciones
 module.exports = {
     pruebaUser,
     register,
-    login
+    login,
+    profile,
+    list,
+    update
 }
