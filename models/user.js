@@ -5,6 +5,7 @@ const UserSchema = Schema({
         type: String,
         required: true
     },
+    surname: String,
     nick: {
         type: String,
         required: true

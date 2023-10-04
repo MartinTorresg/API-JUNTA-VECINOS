@@ -191,32 +191,54 @@ const update = (req, res) => {
             { nick: userToUpdate.nick.toLowerCase() }
         ]
     }).exec(async (error, users) => {
-        if (error) return res.status(500).json({ status: "error", message: "Error en la consulta de usuarios"});
-        /*
-        if (users && users.length >= 1) {
+
+        if (error) return res.status(500).json({ status: "error", message: "Error en la consulta de usuarios" });
+
+        let userIsset = false;
+        users.forEach(user => {
+            if (user && user._id != userIdentity.id) userIsset = true;
+        });
+
+        if (userIsset) {
             return res.status(200).send({
                 status: "success",
                 message: "El usuario ya existe"
             });
         }
-        */
 
-        if(userToUpdate.password){
-            let pwd = await bcrypt.hash(params.password, 10);
-            params.password = pwd;
+        // Cifrar la contraseña
+        if (userToUpdate.password) {
+            let pwd = await bcrypt.hash(userToUpdate.password, 10);
+            userToUpdate.password = pwd;
+
+            //añadido
+        }else{
+            delete userToUpdate.password;
         }
 
-        // Buscar y actualizar
-        return res.status(200).send({
-            status: "success",
-            message: "Metodo de actualizar usuario",
-            userToUpdate
-        });
-        
+        // Buscar y actualizar 
+        try {
+            let userUpdated = await User.findByIdAndUpdate({ _id: userIdentity.id }, userToUpdate, { new: true });
+
+            if (!userUpdated) {
+                return res.status(400).json({ status: "error", message: "Error al actualizar" });
+            }
+
+            // Devolver respuesta
+            return res.status(200).send({
+                status: "success",
+                message: "Metodo de actualizar usuario",
+                user: userUpdated
+            });
+
+        } catch (error) {
+            return res.status(500).send({
+                status: "error",
+                message: "Error al actualizar",
+            });
+        }
 
     });
-
-    
 }
 
 
