@@ -6,9 +6,8 @@ const UserSchema = Schema({
         required: true
     },
     surname: String,
-    nick: {
-        type: String,
-        required: true
+    rut: {
+        type: String
     },
     email: {
         type: String,

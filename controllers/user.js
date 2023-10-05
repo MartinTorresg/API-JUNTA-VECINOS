@@ -22,7 +22,7 @@ const register = (req, res) => {
     let params = req.body;
 
     // Comprobar que me llegan bien (+ validacion)
-    if(!params.name || !params.email || !params.password || !params.nick){
+    if(!params.name || !params.email || !params.password){
         return res.status(400).json({
             status: "error",
             message: "Faltan datos por enviar",
@@ -33,7 +33,7 @@ const register = (req, res) => {
         User.find({ 
             $or: [
                 {email: params.email.toLowerCase()},
-                {nick: params.nick.toLowerCase()}
+                {rut: params.rut.toLowerCase()}
             ]
         }).exec(async(error, users) => {
 
@@ -105,7 +105,7 @@ const login = (req, res) => {
             user: {
                 id: user._id,
                 name: user.name,
-                nick: user.nick
+                rut: user.rut
             },
             token
         });
@@ -188,7 +188,7 @@ const update = (req, res) => {
     User.find({
         $or: [
             { email: userToUpdate.email.toLowerCase() },
-            { nick: userToUpdate.nick.toLowerCase() }
+            { rut: userToUpdate.rut.toLowerCase() }
         ]
     }).exec(async (error, users) => {
 

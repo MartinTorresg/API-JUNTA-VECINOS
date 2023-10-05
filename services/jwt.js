@@ -10,7 +10,7 @@ const createToken = (user) => {
     const payload = {
         id: user._id,
         name: user.name,
-        nick: user.nick,
+        rut: user.rut,
         email: user.email,
         role: user.role,
         iat: moment().unix(),
