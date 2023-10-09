@@ -11,6 +11,18 @@ const validarArticulo = (parametros) => {
     }
 }
 
+const validarProyecto = (parametros) => {
+    
+    let validar_nombre = !validator.isEmpty(parametros.nombre) && 
+                            validator.isLength(parametros.nombre, {min: 5, max: undefined});
+    let validar_descripcion = !validator.isEmpty(parametros.descripcion);
+
+    if(!validar_nombre || ! validar_descripcion){
+        throw new Error("No se ha validado la información !!");
+    }
+}
+
 module.exports = {
-    validarArticulo
+    validarArticulo,
+    validarProyecto
 }
