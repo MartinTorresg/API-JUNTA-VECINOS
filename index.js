@@ -25,12 +25,14 @@ const UserRoutes = require("./routes/user");
 const rutas_articulo = require("./routes/articulo");
 const rutas_proyecto = require("./routes/proyecto");
 const rutas_inscripcion = require("./routes/inscripcion");
+const rutas_actividad = require("./routes/actividad"); // Añade esta línea
 
 // Cargo las rutas
 app.use("/api/user", UserRoutes);
-app.use("/api", rutas_articulo); //aqui no agrego el /articulo porque en las rutas queda confuso
+app.use("/api", rutas_articulo);
 app.use("/api/proyecto", rutas_proyecto);
 app.use("/api/inscripcion", rutas_inscripcion);
+app.use("/api/actividad", rutas_actividad);
 
 // Ruta de prueba
 app.get("/ruta-prueba", (req, res) => {

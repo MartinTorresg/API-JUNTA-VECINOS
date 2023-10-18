@@ -16,7 +16,11 @@ const ProyectoSchema = Schema({
     fecha: {
         type: Date,
         default: Date.now
+    },usuarioPostulante: {
+        type: Schema.Types.ObjectId,
+        ref: 'Usuario'
     }
+
 });
 
 module.exports = model("Proyecto", ProyectoSchema, "proyectos");
