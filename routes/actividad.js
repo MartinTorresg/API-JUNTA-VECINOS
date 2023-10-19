@@ -3,14 +3,12 @@ const ActividadControlador = require("../controllers/actividad");
 
 const router = express.Router();
 
-// Rutas de pruebas
-router.get("/ruta-de-prueba", ActividadControlador.prueba);
+// Ruta de prueba
+router.get("/ruta-de-prueba", ActividadControlador.pruebaActividad);
 
-// Rutas útiles
-router.post("/crear_actividad", ActividadControlador.crearActividad);
-router.get("/actividades", ActividadControlador.listarActividades);
-router.get("/actividad/:id", ActividadControlador.obtenerActividad);
-router.delete("/actividad/:id", ActividadControlador.eliminarActividad);
-router.put("/actividad/:id", ActividadControlador.actualizarActividad);
+// Rutas para actividades
+router.post("/crear_actividad", ActividadControlador.crear_actividad);
+router.get("/actividades/:ultimos?", ActividadControlador.listar_actividades);
+router.get("/actividad/:id", ActividadControlador.uno);
 
 module.exports = router;

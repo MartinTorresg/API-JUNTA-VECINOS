@@ -24,15 +24,16 @@ const validarProyecto = (parametros) => {
 
 const validarActividad = (parametros) => {
     let validar_nombre = !validator.isEmpty(parametros.nombre) &&
-        validator.isLength(parametros.nombre, { min: 3, max: undefined });
-    let validar_fecha = !validator.isEmpty(parametros.fecha) &&
-        validator.isDate(parametros.fecha);
-    let validar_lugar = !validator.isEmpty(parametros.lugar) &&
-        validator.isLength(parametros.lugar, { min: 3, max: undefined });
+        validator.isLength(parametros.nombre, { min: 5, max: undefined });
 
+    let validar_fecha = validator.isDate(parametros.fecha);
 
+    let validar_lugar = !validator.isEmpty(parametros.lugar);
 
-    if (!validar_nombre || !validar_fecha || !validar_lugar) {
+    let validar_cupo = !validator.isEmpty(parametros.cupo) &&
+        validator.isInt(parametros.cupo, { min: 1 });
+
+    if (!validar_nombre || !validar_fecha || !validar_lugar || !validar_cupo) {
         throw new Error("No se ha validado la información de la actividad!!");
     }
 };

@@ -25,7 +25,7 @@ const UserRoutes = require("./routes/user");
 const rutas_articulo = require("./routes/articulo");
 const rutas_proyecto = require("./routes/proyecto");
 const rutas_inscripcion = require("./routes/inscripcion");
-const rutas_actividad = require("./routes/actividad"); // Añade esta línea
+const rutas_actividad = require("./routes/actividad");
 
 // Cargo las rutas
 app.use("/api/user", UserRoutes);

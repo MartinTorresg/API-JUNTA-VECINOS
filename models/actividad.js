@@ -17,7 +17,7 @@ const ActividadSchema = Schema({
         required: true
     },
     cupo: {
-        type: String,
+        type: Number,
         required: true
     }
 });
