@@ -26,6 +26,7 @@ const rutas_articulo = require("./routes/articulo");
 const rutas_proyecto = require("./routes/proyecto");
 const rutas_inscripcion = require("./routes/inscripcion");
 const rutas_actividad = require("./routes/actividad");
+const rutas_certificado = require("./routes/certificado");
 
 // Cargo las rutas
 app.use("/api/user", UserRoutes);
@@ -33,6 +34,7 @@ app.use("/api", rutas_articulo);
 app.use("/api/proyecto", rutas_proyecto);
 app.use("/api/inscripcion", rutas_inscripcion);
 app.use("/api/actividad", rutas_actividad);
+app.use("/api/certificado", rutas_certificado);
 
 // Ruta de prueba
 app.get("/ruta-prueba", (req, res) => {

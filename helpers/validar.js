@@ -38,8 +38,28 @@ const validarActividad = (parametros) => {
     }
 };
 
+const validarCertificado = (parametros) => {
+    let validar_nombre = !validator.isEmpty(parametros.nombre) &&
+        validator.isLength(parametros.nombre, { min: 5, max: undefined });
+
+    let validar_rut = !validator.isEmpty(parametros.rut) &&
+        // Agrega aquí la lógica de validación específica para los números de RUT si es necesario
+        true; // Reemplaza true con la lógica real de validación del RUT
+
+    let validar_direccion = !validator.isEmpty(parametros.direccion);
+
+    let validar_region = !validator.isEmpty(parametros.region);
+
+    let validar_comuna = !validator.isEmpty(parametros.comuna);
+
+    if (!validar_nombre || !validar_rut || !validar_direccion || !validar_region || !validar_comuna) {
+        throw new Error("No se ha validado la información del certificado!!");
+    }
+};
+
 module.exports = {
     validarArticulo,
     validarProyecto,
-    validarActividad
+    validarActividad,
+    validarCertificado
 }
