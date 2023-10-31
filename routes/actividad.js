@@ -10,5 +10,7 @@ router.get("/ruta-de-prueba", ActividadControlador.pruebaActividad);
 router.post("/crear_actividad", ActividadControlador.crear_actividad);
 router.get("/actividades/:ultimos?", ActividadControlador.listar_actividades);
 router.get("/actividad/:id", ActividadControlador.uno);
+router.put("/aprobar/:id", ActividadControlador.aprobarActividad);
+router.delete("/eliminar/:id", ActividadControlador.eliminarActividad);
 
 module.exports = router;

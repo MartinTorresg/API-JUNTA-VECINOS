@@ -18,6 +18,7 @@
     "mongoose": "^6.10.0",
     "mongoose-pagination": "^1.0.0",
     "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.7",
     "validator": "^13.11.0"
   },
   "devDependencies": {

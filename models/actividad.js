@@ -1,6 +1,9 @@
 const { Schema, model } = require("mongoose");
 
+const estadosValidos = ['pendiente', 'aprobada', 'cancelada'];
+
 const ActividadSchema = Schema({
+    
     nombre: {
         type: String,
         required: true
@@ -19,6 +22,14 @@ const ActividadSchema = Schema({
     cupo: {
         type: Number,
         required: true
+    },
+    estado: {
+        type: String,
+        enum: estadosValidos,
+        default: 'pendiente'
+    },user: {
+        type: Schema.Types.ObjectId,
+        ref: "User"
     }
 });
 
