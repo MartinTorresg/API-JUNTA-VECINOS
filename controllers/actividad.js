@@ -139,6 +139,45 @@ const eliminarActividad = async (req, res) => {
     }
 };
 
+const actividadesPorFecha = (req, res) => {
+    // Obtener la fecha de los parámetros de la ruta
+    const fechaSolicitada = req.params.fecha;
+
+    // Convertir la fecha a un objeto Date para comparación
+    const fechaInicio = new Date(fechaSolicitada);
+    fechaInicio.setHours(0, 0, 0, 0);
+
+    const fechaFin = new Date(fechaSolicitada);
+    fechaFin.setHours(23, 59, 59, 999);
+
+    // Buscar actividades que caigan en la fecha especificada
+    Actividad.find({
+        fecha: {
+            $gte: fechaInicio,
+            $lte: fechaFin
+        }
+    })
+    .exec((error, actividades) => {
+        if (error) {
+            return res.status(500).json({
+                status: "error",
+                message: "Error al buscar actividades",
+                error: error
+            });
+        }
+        if (!actividades || actividades.length === 0) {
+            return res.status(404).json({
+                status: "success",
+                message: "No se encontraron actividades para la fecha especificada"
+            });
+        }
+        return res.status(200).json({
+            status: "success",
+            actividades: actividades
+        });
+    });
+};
+
 // Exportar acciones
 module.exports = {
     pruebaActividad,
@@ -146,5 +185,6 @@ module.exports = {
     uno,
     listar_actividades,
     aprobarActividad,
-    eliminarActividad
+    eliminarActividad,
+    actividadesPorFecha
 };
