@@ -96,13 +96,20 @@ const listar_actividades = (req, res) => {
         });
 }
 
-const aprobarActividad = async (actividadId) => {
+const aprobarActividad = async (req, res) => {
     try {
-        // Lógica para aprobar la actividad (actualización en la base de datos, etc.)
-        // Por ejemplo, puedes usar Mongoose para actualizar el estado de la actividad a "aprobada"
-        const actividad = await Actividad.findByIdAndUpdate(actividadId, { estado: 'aprobada' }, { new: true });
+        const actividadId = req.params.id;
 
-        // Obtén el correo electrónico del usuario asociado a la actividad
+        // Encontrar la actividad y obtener detalles del usuario que creó la actividad
+        const actividad = await Actividad.findById(actividadId).populate('user');
+        if (!actividad) {
+            return res.status(404).json({ status: 'error', message: 'Actividad no encontrada' });
+        }
+
+        // Actualizar el estado de la actividad a "aprobada"
+        const actividadActualizada = await Actividad.findByIdAndUpdate(actividadId, { estado: 'aprobada' }, { new: true });
+
+        // Obtener el correo electrónico del usuario asociado a la actividad
         const usuarioEmail = actividad.user.email;
 
         // Envía el correo electrónico al usuario
@@ -114,16 +121,14 @@ const aprobarActividad = async (actividadId) => {
         };
 
         await transporter.sendMail(mailOptions);
-        console.log('Correo electrónico enviado correctamente al aprobar la actividad');
-        
-        // Devuelve la actividad actualizada o un mensaje de éxito según tu necesidad
-        return actividad;
+
+        res.status(200).json({ status: 'success', message: 'Actividad aprobada correctamente', actividad: actividadActualizada });
     } catch (error) {
-        // Maneja cualquier error que pueda ocurrir durante la aprobación o el envío del correo electrónico
-        console.error('Error al aprobar la actividad o enviar el correo electrónico:', error);
-        throw error; // Lanza el error para manejarlo en el nivel superior, si es necesario
+        console.error('Error al aprobar la actividad:', error);
+        res.status(500).json({ status: 'error', message: 'Error al aprobar la actividad' });
     }
 };
+
 
 const eliminarActividad = async (req, res) => {
     try {
@@ -150,12 +155,13 @@ const actividadesPorFecha = (req, res) => {
     const fechaFin = new Date(fechaSolicitada);
     fechaFin.setHours(23, 59, 59, 999);
 
-    // Buscar actividades que caigan en la fecha especificada
+    // Buscar solo actividades aprobadas que caigan en la fecha especificada
     Actividad.find({
         fecha: {
             $gte: fechaInicio,
             $lte: fechaFin
-        }
+        },
+        estado: 'aprobada' // Filtrar solo actividades aprobadas
     })
     .exec((error, actividades) => {
         if (error) {
@@ -177,6 +183,7 @@ const actividadesPorFecha = (req, res) => {
         });
     });
 };
+
 
 // Exportar acciones
 module.exports = {
