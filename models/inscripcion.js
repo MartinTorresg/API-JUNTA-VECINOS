@@ -21,6 +21,11 @@ const InscripcionSchema = Schema({
     direccion: {
         type: String,
         required: true
+    },
+    estado: {
+        type: String,
+        enum: ['Aprobada', 'En Espera', 'Rechazada'],
+        default: 'En Espera'
     }
 });
 

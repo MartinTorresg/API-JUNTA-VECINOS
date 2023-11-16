@@ -1,12 +1,9 @@
-// Importaciones necesarias
-const bcrypt = require("bcrypt");
-const nodemailer = require('nodemailer');
-
-// Importar modelos
+// UserController.js
 const User = require("../models/user");
-
-// Importar servicios
+const bcrypt = require("bcrypt");
 const jwt = require("../services/jwt");
+const nodemailer = require('nodemailer');
+const Inscripcion = require("../models/inscripcion");
 
 // Configuración de Nodemailer
 const transporter = nodemailer.createTransport({
@@ -39,11 +36,10 @@ const enviarCorreoConfirmacion = (email, nombreUsuario, password) => {
 };
 
 // Registro de usuarios
-const register = (req, res) => {
-    // Recoger datos de la petición
+// Método de registro actualizado en UserController.js
+const register = async (req, res) => {
     let params = req.body;
 
-    // Comprobar que llegan los datos necesarios
     if (!params.name || !params.email || !params.password) {
         return res.status(400).json({
             status: "error",
@@ -51,49 +47,49 @@ const register = (req, res) => {
         });
     }
 
-    // Controlar usuarios duplicados
-    User.find({ 
-        $or: [
-            {email: params.email.toLowerCase()},
-            {rut: params.rut.toLowerCase()}
-        ]
-    }).exec(async (error, users) => {
-        if (error) return res.status(500).json({status: "error", message: "Error en la consulta de usuarios"});
-
-        if (users && users.length >= 1) {
-            return res.status(200).send({
-                status: "success",
-                message: "El usuario ya existe"
-            });
-        } else {
-            // Guardar la contraseña en texto plano antes de cifrarla
-            let plainPassword = params.password;
-
-            // Cifrar la contraseña
-            let pwd = await bcrypt.hash(params.password, 10);
-            params.password = pwd;
-
-            // Crear objeto de usuario
-            let user_to_save = new User(params);
-
-            // Guardar usuario en la bbdd
-            user_to_save.save((error, userStored) => {
-                if (error || !userStored) {
-                    return res.status(500).send({status: "error", message: "Error al guardar el usuario"});
-                } else {
-                    // Enviar correo de confirmación con la contraseña
-                    enviarCorreoConfirmacion(userStored.email, userStored.name, plainPassword);
-
-                    return res.status(200).json({
-                        status: "success",
-                        message: "Usuario registrado correctamente",
-                        user: userStored
-                    });
-                }
+    try {
+        const userExist = await User.findOne({ email: params.email.toLowerCase() });
+        if (userExist) {
+            return res.status(409).json({
+                status: "error",
+                message: "El usuario ya está registrado",
             });
         }
-    });
+
+        // Verificar si la inscripción existe
+        if (params.idInscripcion) {
+            const inscripcion = await Inscripcion.findById(params.idInscripcion);
+            if (!inscripcion) {
+                return res.status(404).send({
+                    status: "error",
+                    message: "Inscripción no encontrada"
+                });
+            }
+        }
+
+        // Cifrar la contraseña y crear el usuario
+        const pwd = await bcrypt.hash(params.password, 10);
+        const user = new User({ ...params, password: pwd });
+        const userStored = await user.save();
+
+        // Cambiar el estado de la inscripción si existe
+        if (params.idInscripcion) {
+            await Inscripcion.findByIdAndUpdate(params.idInscripcion, { estado: 'Aprobada' });
+        }
+
+        // Enviar correo de confirmación
+        await enviarCorreoConfirmacion(userStored.email, userStored.name);
+
+        res.status(200).json({
+            status: "success",
+            user: userStored
+        });
+    } catch (error) {
+        console.error(error); // Imprimir el error en consola para depuración
+        res.status(500).send({ status: "error", message: "Error al procesar la solicitud" });
+    }
 };
+
 
 
 const login = (req, res) => {
@@ -270,6 +266,59 @@ const update = (req, res) => {
     });
 }
 
+// Método para cambiar la contraseña
+const cambiarContraseña = async (req, res) => {
+    const userId = req.user.id; // Asumiendo que el ID del usuario viene del token de autenticación
+    const { passwordActual, nuevaPassword } = req.body;
+
+    if (!passwordActual || !nuevaPassword) {
+        return res.status(400).json({
+            status: "error",
+            message: "Faltan datos por enviar",
+        });
+    }
+
+    try {
+        // Buscar el usuario por ID
+        const usuario = await User.findById(userId);
+
+        if (!usuario) {
+            return res.status(404).json({
+                status: "error",
+                message: "Usuario no encontrado",
+            });
+        }
+
+        // Verificar la contraseña actual
+        const passwordCorrecta = await bcrypt.compare(passwordActual, usuario.password);
+        if (!passwordCorrecta) {
+            return res.status(400).json({
+                status: "error",
+                message: "La contraseña actual es incorrecta",
+            });
+        }
+
+        // Cifrar la nueva contraseña
+        const passwordCifrada = await bcrypt.hash(nuevaPassword, 10);
+
+        // Actualizar la contraseña del usuario
+        usuario.password = passwordCifrada;
+        await usuario.save();
+
+        return res.status(200).json({
+            status: "success",
+            message: "Contraseña cambiada con éxito",
+        });
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            status: "error",
+            message: "Error en el servidor",
+        });
+    }
+};
+
 
 // Exportar acciones
 module.exports = {
@@ -277,5 +326,6 @@ module.exports = {
     login,
     profile,
     list,
-    update
+    update,
+    cambiarContraseña
 }

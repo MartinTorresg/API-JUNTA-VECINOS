@@ -142,6 +142,51 @@ const listar_inscripciones = (req, res) => {
 
 }
 
+const cambiarEstado = async (req, res) => {
+    const { id, nuevoEstado } = req.body;
+
+    try {
+        const inscripcionActualizada = await Inscripcion.findByIdAndUpdate(id, { estado: nuevoEstado }, { new: true });
+        if (!inscripcionActualizada) {
+            return res.status(404).send({ status: "error", message: "Inscripción no encontrada" });
+        }
+
+        res.status(200).send({ status: "success", inscripcion: inscripcionActualizada });
+    } catch (error) {
+        res.status(500).send({ status: "error", message: "Error al actualizar la inscripción" });
+    }
+};
+
+const borrarInscripcion = (req, res) => {
+    // Recoger el ID de la inscripción a borrar
+    const id = req.params.id;
+
+    // Eliminar la inscripción
+    Inscripcion.findByIdAndRemove(id, (error, inscripcionBorrada) => {
+        if (error) {
+            // Manejar error del servidor
+            return res.status(500).send({
+                status: "error",
+                message: "Error al borrar la inscripción"
+            });
+        }
+
+        if (!inscripcionBorrada) {
+            // Manejar el caso de inscripción no encontrada
+            return res.status(404).send({
+                status: "error",
+                message: "No se ha encontrado la inscripción a borrar"
+            });
+        }
+
+        // Devolver respuesta
+        return res.status(200).send({
+            status: "success",
+            inscripcion: inscripcionBorrada
+        });
+    });
+}
+
 
 
 // Exportar acciones
@@ -150,5 +195,7 @@ module.exports = {
     register,
     profile,
     listar_inscripciones,
-    uno
+    uno,
+    cambiarEstado,
+    borrarInscripcion
 }
