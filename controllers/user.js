@@ -56,20 +56,18 @@ const register = async (req, res) => {
             });
         }
 
-        // Verificar si la inscripción existe
-        if (params.idInscripcion) {
-            const inscripcion = await Inscripcion.findById(params.idInscripcion);
-            if (!inscripcion) {
-                return res.status(404).send({
-                    status: "error",
-                    message: "Inscripción no encontrada"
-                });
-            }
-        }
+        // Guarda la contraseña en texto plano en una variable antes de cifrarla
+        const plainPassword = params.password;
 
-        // Cifrar la contraseña y crear el usuario
+        // Cifrar la contraseña
         const pwd = await bcrypt.hash(params.password, 10);
-        const user = new User({ ...params, password: pwd });
+
+        // Crear el usuario
+        const user = new User({
+            ...params,
+            password: pwd
+        });
+
         const userStored = await user.save();
 
         // Cambiar el estado de la inscripción si existe
@@ -77,16 +75,15 @@ const register = async (req, res) => {
             await Inscripcion.findByIdAndUpdate(params.idInscripcion, { estado: 'Aprobada' });
         }
 
-        // Enviar correo de confirmación
-        await enviarCorreoConfirmacion(userStored.email, userStored.name);
+        // Enviar correo de confirmación con la contraseña en texto plano
+        enviarCorreoConfirmacion(userStored.email, userStored.name, plainPassword);
 
         res.status(200).json({
             status: "success",
             user: userStored
         });
     } catch (error) {
-        console.error(error); // Imprimir el error en consola para depuración
-        res.status(500).send({ status: "error", message: "Error al procesar la solicitud" });
+        res.status(500).send({ status: "error", message: "Error al guardar el usuario" });
     }
 };
 
@@ -319,6 +316,76 @@ const cambiarContraseña = async (req, res) => {
     }
 };
 
+const getTotalUsers = async (req, res) => {
+    try {
+        const totalUsers = await User.countDocuments();
+        const totalVecinos = 500; // Este es un valor de ejemplo. Puedes obtenerlo de una fuente más dinámica si es necesario.
+        const tasaRegistro = (totalUsers / totalVecinos) * 100;
+
+        res.status(200).json({
+            status: "success",
+            tasaRegistro
+        });
+    } catch (error) {
+        res.status(500).send({
+            status: "error",
+            message: "Error al obtener la tasa de registro",
+            error
+        });
+    }
+};
+
+const getKPIRegistroVecinos = async (req, res) => {
+    try {
+        const totalVecinos = 500; // Sustituye este valor por el total real de vecinos de tu unidad territorial
+
+        // Calcular el valor actual del KPI
+        const totalUsuariosRegistrados = await User.countDocuments();
+        const tasaRegistroActual = (totalUsuariosRegistrados / totalVecinos) * 100;
+
+        // Obtener datos históricos
+        const historial = await User.aggregate([
+            {
+                $group: {
+                    _id: { 
+                        year: { $year: "$createdAt" },
+                        month: { $month: "$createdAt" }
+                    },
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    year: "$_id.year",
+                    month: "$_id.month",
+                    count: 1
+                }
+            },
+            { $sort: { year: 1, month: 1 } } // Ordenar los datos por año y mes
+        ]);
+
+        // Convertir el recuento a una tasa de registro
+        const historialTasa = historial.map(item => ({
+            fecha: `${item.year}-${item.month}`,
+            tasa: (item.count / totalVecinos) * 100
+        }));
+
+        res.status(200).json({
+            status: "success",
+            valorActual: tasaRegistroActual.toFixed(2),
+            historial: historialTasa
+        });
+    } catch (error) {
+        res.status(500).send({
+            status: "error",
+            message: "Error al obtener los datos del KPI",
+            error
+        });
+    }
+};
+
+
 
 // Exportar acciones
 module.exports = {
@@ -327,5 +394,7 @@ module.exports = {
     profile,
     list,
     update,
-    cambiarContraseña
+    cambiarContraseña,
+    getTotalUsers,
+    getKPIRegistroVecinos
 }

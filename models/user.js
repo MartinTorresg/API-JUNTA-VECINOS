@@ -21,6 +21,10 @@ const UserSchema = Schema({
         type: String,
         default: "role_user"
     },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
 });
 
 module.exports = model("User", UserSchema, "users");
