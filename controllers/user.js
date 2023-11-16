@@ -1,6 +1,6 @@
-// Importar dependencias y modulos
+// Importaciones necesarias
 const bcrypt = require("bcrypt");
-const mongoosePagination = require("mongoose-pagination");
+const nodemailer = require('nodemailer');
 
 // Importar modelos
 const User = require("../models/user");
@@ -8,64 +8,93 @@ const User = require("../models/user");
 // Importar servicios
 const jwt = require("../services/jwt");
 
-// Acciones de prueba
-const pruebaUser = (req, res) => {
-    return res.status(200).send({
-        message: "Mensaje enviado desde: controllers/user.js",
-        usuario: req.user
+// Configuración de Nodemailer
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'not.timmy49@gmail.com', // Reemplazar con tu correo electrónico
+        pass: 'abyi wpap zbfp lamo' // Reemplazar con tu contraseña
+    },
+    tls: {
+        rejectUnauthorized: false
+    }
+});
+
+// Función para enviar correo electrónico de confirmación
+const enviarCorreoConfirmacion = (email, nombreUsuario, password) => {
+    const mailOptions = {
+        from: 'not.timmy49@gmail.com', // Tu correo electrónico
+        to: email,
+        subject: 'Registro Exitoso en la Junta de Vecinos',
+        text: `Hola ${nombreUsuario},\n\nTu cuenta ha sido creada con éxito. Puedes iniciar sesión usando tu correo electrónico y la siguiente contraseña: ${password}\n\nPor favor, cambia tu contraseña después de iniciar sesión por primera vez por motivos de seguridad.\n\nSaludos,\nEquipo de la Junta de Vecinos`
+    };
+
+    transporter.sendMail(mailOptions, function(error, info) {
+        if (error) {
+            console.log('Error al enviar el correo: ', error);
+        } else {
+            console.log('Correo de confirmación enviado: ', info.response);
+        }
     });
-}
+};
 
 // Registro de usuarios
 const register = (req, res) => {
-    // Recoger datos de la peticion
+    // Recoger datos de la petición
     let params = req.body;
 
-    // Comprobar que me llegan bien (+ validacion)
-    if(!params.name || !params.email || !params.password){
+    // Comprobar que llegan los datos necesarios
+    if (!params.name || !params.email || !params.password) {
         return res.status(400).json({
             status: "error",
             message: "Faltan datos por enviar",
         });
     }
 
-        // Control usuarios duplicados
-        User.find({ 
-            $or: [
-                {email: params.email.toLowerCase()},
-                {rut: params.rut.toLowerCase()}
-            ]
-        }).exec(async(error, users) => {
+    // Controlar usuarios duplicados
+    User.find({ 
+        $or: [
+            {email: params.email.toLowerCase()},
+            {rut: params.rut.toLowerCase()}
+        ]
+    }).exec(async (error, users) => {
+        if (error) return res.status(500).json({status: "error", message: "Error en la consulta de usuarios"});
 
-            if(error) return res.status(500).json({status: "error", message: "Error en la consulta de usuarios"});
+        if (users && users.length >= 1) {
+            return res.status(200).send({
+                status: "success",
+                message: "El usuario ya existe"
+            });
+        } else {
+            // Guardar la contraseña en texto plano antes de cifrarla
+            let plainPassword = params.password;
 
-            if(users && users.length >= 1){
-                return res.status(200).send({
-                    status: "success",
-                    message: "El usuario ya existe"
-                });
-
-            }
             // Cifrar la contraseña
             let pwd = await bcrypt.hash(params.password, 10);
             params.password = pwd;
 
-            //Crear objeto de usuario
+            // Crear objeto de usuario
             let user_to_save = new User(params);
 
             // Guardar usuario en la bbdd
             user_to_save.save((error, userStored) => {
-                if(error || !userStored) return res.status(500).send({status: "error", "message": "Error al guardar el usuario"});
-                    //Devolver resultado
+                if (error || !userStored) {
+                    return res.status(500).send({status: "error", message: "Error al guardar el usuario"});
+                } else {
+                    // Enviar correo de confirmación con la contraseña
+                    enviarCorreoConfirmacion(userStored.email, userStored.name, plainPassword);
+
                     return res.status(200).json({
                         status: "success",
                         message: "Usuario registrado correctamente",
                         user: userStored
                     });
-
+                }
             });
-        });
-}
+        }
+    });
+};
+
 
 const login = (req, res) => {
     // Recoger parametros body
@@ -244,7 +273,6 @@ const update = (req, res) => {
 
 // Exportar acciones
 module.exports = {
-    pruebaUser,
     register,
     login,
     profile,
