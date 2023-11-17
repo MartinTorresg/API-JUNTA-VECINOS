@@ -14,6 +14,9 @@ router.get("/proyecto/:id", ProyectoControlador.uno);
 router.delete("/proyecto/:id", ProyectoControlador.borrar);
 router.put("/proyecto/:id", ProyectoControlador.editar);
 router.get("/buscar/:busqueda", ProyectoControlador.buscador);
+router.get("/kpi-tasa-finalizacion-proyectos", ProyectoControlador.getKPITasaFinalizacionProyectos);
+router.put("/actualizar_estado/:id", ProyectoControlador.actualizarEstado);
+router.get('/proyectos-por-estado', ProyectoControlador.getProyectosPorEstado);
 
 
 

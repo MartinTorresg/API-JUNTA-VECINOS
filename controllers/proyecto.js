@@ -191,6 +191,71 @@ const buscador = (req, res) => {
     });
 }
 
+const getKPITasaFinalizacionProyectos = async (req, res) => {
+    try {
+        const totalProyectos = await Proyecto.countDocuments();
+        const proyectosCompletados = await Proyecto.countDocuments({ estado: 'Finalizado' });
+        const tasaFinalizacion = (proyectosCompletados / totalProyectos) * 100;
+
+        res.status(200).json({
+            status: "success",
+            tasaFinalizacion: tasaFinalizacion.toFixed(2) // Redondea a dos decimales
+        });
+    } catch (error) {
+        res.status(500).send({
+            status: "error",
+            message: "Error al calcular la tasa de finalización de proyectos",
+            error
+        });
+    }
+};
+
+const actualizarEstado = (req, res) => {
+    const proyectoId = req.params.id;
+    const nuevoEstado = req.body.estado;
+
+    Proyecto.findByIdAndUpdate(proyectoId, { estado: nuevoEstado }, { new: true }, (error, proyectoActualizado) => {
+        if (error || !proyectoActualizado) {
+            return res.status(500).json({
+                status: "error",
+                mensaje: "Error al actualizar el estado del proyecto"
+            });
+        }
+        res.status(200).json({
+            status: "success",
+            proyecto: proyectoActualizado
+        });
+    });
+};
+
+const getProyectosPorEstado = async (req, res) => {
+    try {
+        // Contar proyectos por cada estado
+        const porRevisarCount = await Proyecto.countDocuments({ estado: 'Por Revisar' });
+        const enProcesoCount = await Proyecto.countDocuments({ estado: 'En Proceso' });
+        const finalizadoCount = await Proyecto.countDocuments({ estado: 'Finalizado' });
+
+        // Construir la respuesta
+        const datos = {
+            porRevisar: porRevisarCount,
+            enProceso: enProcesoCount,
+            finalizado: finalizadoCount
+        };
+
+        // Enviar la respuesta
+        res.status(200).json({
+            status: "success",
+            datos
+        });
+    } catch (error) {
+        res.status(500).send({
+            status: "error",
+            message: "Error al obtener la cantidad de proyectos por estado",
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     prueba,
     crear_proyecto,
@@ -198,5 +263,8 @@ module.exports = {
     uno,
     borrar,
     editar,
-    buscador
+    buscador,
+    getKPITasaFinalizacionProyectos,
+    actualizarEstado,
+    getProyectosPorEstado
 }

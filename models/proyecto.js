@@ -11,7 +11,9 @@ const ProyectoSchema = Schema({
     },
     estado: {
         type: String,
-        default: "por revisar"
+        required: true,
+        enum: ["Por Revisar", "En Proceso", "Finalizado"], // Añadir más estados según sea necesario
+        default: "Por Revisar"
     },
     fecha: {
         type: Date,
