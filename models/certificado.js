@@ -14,11 +14,13 @@ const CertificadoSchema = Schema({
         required: true
     },
     region: {
-        type: String,
+        type: Schema.Types.ObjectId, // Cambiado para referenciar el modelo de Region
+        ref: "Region",
         required: true
     },
     comuna: {
-        type: String,
+        type: Schema.Types.ObjectId, // Cambiado para referenciar el modelo de Comuna
+        ref: "Comuna",
         required: true
     },
     email: {

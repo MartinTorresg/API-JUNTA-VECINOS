@@ -17,7 +17,7 @@ const crear_certificado = (req, res) => {
     // Recoger datos de la petición
     let parametros = req.body;
 
-    // Comprobar que se envíen los datos necesarios (+ validación)
+    // Comprobar que se envíen los datos necesarios
     if (!parametros.nombre || !parametros.rut || !parametros.direccion || !parametros.region || !parametros.comuna) {
         return res.status(400).json({
             status: "error",
@@ -43,41 +43,42 @@ const crear_certificado = (req, res) => {
 }
 
 const uno_certificado = (req, res) => {
-    // Recoger un ID por la URL
     let id = req.params.id;
-
-    // Buscar el certificado
-    Certificado.findById(id, (error, certificado) => {
-        // Si no existe, devolver error
-        if (error || !certificado) {
-            return res.status(404).json({
-                status: "error",
-                message: "No se ha encontrado el certificado"
+    Certificado.findById(id)
+        .populate('region')
+        .populate('comuna')
+        .exec((error, certificado) => {
+            if (error || !certificado) {
+                return res.status(404).json({
+                    status: "error",
+                    message: "No se ha encontrado el certificado"
+                });
+            }
+            return res.status(200).json({
+                status: "success",
+                certificado
             });
-        }
-        // Devolver resultado
-        return res.status(200).json({
-            status: "success",
-            certificado
         });
-    });
-}
+};
 
 const listar_certificados = (req, res) => {
-    Certificado.find({}, (error, certificados) => {
-        if (error || !certificados) {
-            return res.status(404).json({
-                status: "error",
-                message: "No se han encontrado certificados"
+    Certificado.find({})
+        .populate('region')
+        .populate('comuna')
+        .exec((error, certificados) => {
+            if (error || !certificados) {
+                return res.status(404).json({
+                    status: "error",
+                    message: "No se han encontrado certificados"
+                });
+            }
+            return res.status(200).send({
+                status: "success",
+                contador: certificados.length,
+                certificados
             });
-        }
-        return res.status(200).send({
-            status: "success",
-            contador: certificados.length,
-            certificados
         });
-    });
-}
+};
 
 const borrar_certificado = (req, res) => {
     let certificadoId = req.params.id;
@@ -112,6 +113,9 @@ const transporter = nodemailer.createTransport({
 
 // Función para generar PDF
 const generarPDF = async (datos) => {
+    console.log("Datos recibidos para PDF:", datos);
+    const regionNombre = datos.region || 'Región no especificada';
+    const comunaNombre = datos.comuna || 'Comuna no especificada';
     const fonts = {
         Helvetica: {
             normal: 'Helvetica',
@@ -140,12 +144,12 @@ const generarPDF = async (datos) => {
             {
                 columns: [
                     { width: '50%', text: `Dirección: ${datos.direccion}`, style: 'dataStyle' },
-                    { width: '50%', text: `Región: ${datos.region}`, style: 'dataStyle' }
+                    { width: '50%', text: `Región: ${regionNombre}`, style: 'dataStyle' }
                 ]
             },
             {
                 columns: [
-                    { width: '100%', text: `Comuna: ${datos.comuna}`, style: 'dataStyle' }
+                    { width: '100%', text: `Comuna: ${comunaNombre}`, style: 'dataStyle' }
                 ]
             }
         ],
@@ -233,4 +237,4 @@ module.exports = {
     listar_certificados,
     borrar_certificado,
     enviar_certificado 
-};
+}; 
