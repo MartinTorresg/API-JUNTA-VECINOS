@@ -19,46 +19,46 @@ const register = (req, res) => {
     let params = req.body;
 
     // Comprobar que me llegan bien (+ validacion)
-    if(!params.nombre || !params.email){
+    if (!params.nombre || !params.email) {
         return res.status(400).json({
             status: "error",
             message: "Faltan datos por enviar",
         });
     }
 
-        // Control usuarios duplicados
-        Inscripcion.find({ 
-            $or: [
-                {email: params.email.toLowerCase()},
-                {run: params.run.toLowerCase()}
-            ]
-        }).exec(async(error, inscripciones) => {
+    // Control usuarios duplicados
+    Inscripcion.find({
+        $or: [
+            { email: params.email.toLowerCase() },
+            { run: params.run.toLowerCase() }
+        ]
+    }).exec(async (error, inscripciones) => {
 
-            if(error) return res.status(500).json({status: "error", message: "Error en la consulta de Inscripcion"});
+        if (error) return res.status(500).json({ status: "error", message: "Error en la consulta de Inscripcion" });
 
-            if(inscripciones && inscripciones.length >= 1){
-                return res.status(200).send({
-                    status: "success",
-                    message: "La Inscripcion ya existe"
-                });
-
-            }
-
-            //Crear objeto de usuario
-            let inscripcion_to_save = new Inscripcion(params);
-
-            // Guardar usuario en la bbdd
-            inscripcion_to_save.save((error, inscripcionStored) => {
-                if(error || !inscripcionStored) return res.status(500).send({status: "error", "message": "Error al guardar la inscripcion"});
-                    //Devolver resultado
-                    return res.status(200).json({
-                        status: "success",
-                        message: "Inscripcion registrado correctamente",
-                        inscripcion: inscripcionStored
-                    });
-
+        if (inscripciones && inscripciones.length >= 1) {
+            return res.status(200).send({
+                status: "success",
+                message: "La Inscripcion ya existe"
             });
+
+        }
+
+        //Crear objeto de usuario
+        let inscripcion_to_save = new Inscripcion(params);
+
+        // Guardar usuario en la bbdd
+        inscripcion_to_save.save((error, inscripcionStored) => {
+            if (error || !inscripcionStored) return res.status(500).send({ status: "error", "message": "Error al guardar la inscripcion" });
+            //Devolver resultado
+            return res.status(200).json({
+                status: "success",
+                message: "Inscripcion registrado correctamente",
+                inscripcion: inscripcionStored
+            });
+
         });
+    });
 }
 
 
@@ -70,48 +70,44 @@ const profile = (req, res) => {
     //const userProfile = await User.findById(id)
 
     Inscripcion.findById(id)
-    .select({password: 0, role: 0})
-    .exec((error, inscripcionProfile) => {
-        if(error || !inscripcionProfile){
-            return res.status(404).send({
-                status: "error",
-                message: "La Inscripcion no existe o hay un error"
+        .select({ password: 0, role: 0 })
+        .exec((error, inscripcionProfile) => {
+            if (error || !inscripcionProfile) {
+                return res.status(404).send({
+                    status: "error",
+                    message: "La Inscripcion no existe o hay un error"
+                });
+            }
+            // Devolver el resultado
+            return res.status(200).send({
+                status: "success",
+                inscripcion: inscripcionProfile
             });
-        }
-        // Devolver el resultado
-        return res.status(200).send({
-            status: "success",
-            inscripcion: inscripcionProfile
+
         });
 
-    });
 
-    
 }
 
 const uno = (req, res) => {
-    // Recoger un id por la url
     let id = req.params.id;
 
-    // Buscar el articulo
-    Inscripcion.findById(id, (error, inscripcion) => {
-
-        // Si no existe devolver error
-        if (error || !inscripcion) {
-            return res.status(404).json({
-                status: "error",
-                mensaje: "No se han encontrado la inscripcion"
+    Inscripcion.findById(id)
+        .populate('region')
+        .populate('comuna')
+        .exec((error, inscripcion) => {
+            if (error || !inscripcion) {
+                return res.status(404).json({
+                    status: "error",
+                    mensaje: "No se han encontrado la inscripcion"
+                });
+            }
+            return res.status(200).json({
+                status: "success",
+                inscripcion
             });
-        }
-
-        // Devolver resultado
-        return res.status(200).json({
-            status: "success",
-            inscripcion
         });
-
-    });
-}
+};
 
 
 const listar_inscripciones = (req, res) => {
