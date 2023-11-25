@@ -22,6 +22,16 @@ const InscripcionSchema = Schema({
         type: String,
         required: true
     },
+    region: {
+        type: Schema.Types.ObjectId, // Cambiado para referenciar el modelo de Region
+        ref: "Region",
+        required: true
+    },
+    comuna: {
+        type: Schema.Types.ObjectId, // Cambiado para referenciar el modelo de Comuna
+        ref: "Comuna",
+        required: true
+    },
     estado: {
         type: String,
         enum: ['Aprobada', 'En Espera', 'Rechazada'],
