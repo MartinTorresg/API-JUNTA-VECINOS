@@ -40,7 +40,8 @@ const enviarCorreoConfirmacion = (email, nombreUsuario, password) => {
 const register = async (req, res) => {
     let params = req.body;
 
-    if (!params.name || !params.email || !params.password) {
+    // Verificar si faltan datos esenciales
+    if (!params.name || !params.email) {
         return res.status(400).json({
             status: "error",
             message: "Faltan datos por enviar",
@@ -48,6 +49,7 @@ const register = async (req, res) => {
     }
 
     try {
+        // Verificar si el usuario ya existe
         const userExist = await User.findOne({ email: params.email.toLowerCase() });
         if (userExist) {
             return res.status(409).json({
@@ -56,16 +58,20 @@ const register = async (req, res) => {
             });
         }
 
-        // Guarda la contraseña en texto plano en una variable antes de cifrarla
-        const plainPassword = params.password;
-
-        // Cifrar la contraseña
-        const pwd = await bcrypt.hash(params.password, 10);
+        // Generar la contraseña automáticamente
+        const generatedPassword = params.name.substring(0, 3) + params.surname.substring(0, 3) + params.rut.substring(params.rut.length - 3);
+        const hashedPassword = await bcrypt.hash(generatedPassword, 10);
 
         // Crear el usuario
         const user = new User({
-            ...params,
-            password: pwd
+            name: params.name,
+            surname: params.surname,
+            rut: params.rut,
+            email: params.email,
+            password: hashedPassword,
+            region: params.region,
+            comuna: params.comuna
+            // Añadir otros campos si es necesario
         });
 
         const userStored = await user.save();
@@ -75,8 +81,8 @@ const register = async (req, res) => {
             await Inscripcion.findByIdAndUpdate(params.idInscripcion, { estado: 'Aprobada' });
         }
 
-        // Enviar correo de confirmación con la contraseña en texto plano
-        enviarCorreoConfirmacion(userStored.email, userStored.name, plainPassword);
+        // Enviar correo de confirmación con la contraseña generada
+        enviarCorreoConfirmacion(userStored.email, userStored.name, generatedPassword);
 
         res.status(200).json({
             status: "success",

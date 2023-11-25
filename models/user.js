@@ -24,6 +24,16 @@ const UserSchema = Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    region: {
+        type: Schema.Types.ObjectId, // Cambiado para referenciar el modelo de Region
+        ref: "Region",
+        required: true
+    },
+    comuna: {
+        type: Schema.Types.ObjectId, // Cambiado para referenciar el modelo de Comuna
+        ref: "Comuna",
+        required: true
     }
 });
 
