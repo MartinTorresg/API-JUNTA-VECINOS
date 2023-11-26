@@ -83,14 +83,26 @@ const listar_certificados = (req, res) => {
 const borrar_certificado = (req, res) => {
     let certificadoId = req.params.id;
 
+    console.log("Intentando borrar el certificado con ID:", certificadoId); // Nuevo log
+
     Certificado.findOneAndDelete({ _id: certificadoId }, (error, certificadoBorrado) => {
-        if (error || !certificadoBorrado) {
+        if (error) {
+            console.error("Error al intentar borrar el certificado:", error); // Nuevo log para errores
             return res.status(500).json({
                 status: "error",
                 mensaje: "Error al borrar el certificado"
             });
         }
 
+        if (!certificadoBorrado) {
+            console.log("No se encontró un certificado para borrar con ID:", certificadoId); // Nuevo log si no se encuentra el certificado
+            return res.status(404).json({
+                status: "error",
+                mensaje: "Certificado no encontrado"
+            });
+        }
+
+        console.log("Certificado borrado con éxito:", certificadoBorrado); // Nuevo log para confirmar la eliminación
         return res.status(200).json({
             status: "success",
             certificado: certificadoBorrado,
@@ -98,6 +110,7 @@ const borrar_certificado = (req, res) => {
         });
     });
 };
+
 
 // Configuración de Nodemailer
 const transporter = nodemailer.createTransport({
@@ -220,7 +233,8 @@ const enviar_certificado = async (req, res) => {
                 res.status(500).send('Error al enviar el email');
             } else {
                 console.log('Email enviado: ' + info.response);
-                res.status(200).send('Email enviado con éxito');
+                res.status(200).json({ status: "success", message: "Email enviado correctamente" });
+
             }
         });
     } catch (error) {
