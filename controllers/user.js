@@ -4,6 +4,8 @@ const bcrypt = require("bcrypt");
 const jwt = require("../services/jwt");
 const nodemailer = require('nodemailer');
 const Inscripcion = require("../models/inscripcion");
+const PdfPrinter = require('pdfmake');
+const { generarPDF } = require('../helpers/pdfGenerator');
 
 // Configuración de Nodemailer
 const transporter = nodemailer.createTransport({
@@ -391,6 +393,43 @@ const getKPIRegistroVecinos = async (req, res) => {
     }
 };
 
+const descargarCertificadoUsuario = async (req, res) => {
+    try {
+        console.log("Usuario obtenido del token:", req.user);
+        const userId = req.user.id;
+        const user = await User.findById(userId)
+                                .populate('region', 'nombre') // Asegúrate de que 'nombre' es el campo correcto en tu modelo de Region
+                                .populate('comuna', 'nombre');
+        if (!user) {
+            console.log("Usuario no encontrado en la base de datos");
+            return res.status(404).send('Usuario no encontrado');
+        }
+
+        // Datos del usuario para el certificado
+        const datosCertificado = {
+            nombre: user.name,
+            rut: user.rut,
+            direccion: user.direccion, // Asegúrate de que estos campos existan en tu modelo de usuario
+            region: user.region ? user.region.nombre : 'Región no especificada',
+            comuna: user.comuna ? user.comuna.nombre : 'Comuna no especificada',
+        };
+
+        // Generar el PDF con la información del usuario
+        const pdfBuffer = await generarPDF(datosCertificado);
+
+        // Establecer los encabezados para la descarga del PDF
+        res.setHeader('Content-Disposition', 'attachment; filename=Certificado.pdf');
+        res.setHeader('Content-Type', 'application/pdf');
+
+        // Enviar el PDF
+        res.send(pdfBuffer);
+
+    } catch (error) {
+        console.log("Error en descargarCertificadoUsuario:", error);
+        res.status(500).send('Error interno del servidor');
+    }
+};
+
 
 
 // Exportar acciones
@@ -402,5 +441,7 @@ module.exports = {
     update,
     cambiarContraseña,
     getTotalUsers,
-    getKPIRegistroVecinos
+    getKPIRegistroVecinos,
+    descargarCertificadoUsuario,
+    generarPDF
 }

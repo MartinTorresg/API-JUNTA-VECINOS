@@ -8,34 +8,34 @@ const secret = libjwt.secret;
 
 // MIDDLEWARE de autenticacion
 exports.auth = (req, res, next) => {
+    console.log("Ingreso al middleware de autenticación");
 
-    // Comprobar si me llega la cabecera de auth
-    if(!req.headers.authorization){
+    if (!req.headers.authorization) {
+        console.log("No se encontró la cabecera de autorización");
         return res.status(403).send({
             status: "error",
             message: "La petición no tiene la cabecera de autenticación"
         });
     }
 
-    // Limpiar el token
-    let token = req.headers.authorization.replace(/['"]+/g, '');
+    let token = req.headers.authorization.replace(/^Bearer\s+/, "");
+    console.log("Token recibido en el servidor:", token);
 
-    // Decodificar token
-    try{
+    try {
         let payload = jwt.decode(token, secret);
+        console.log("Payload del token:", payload);
 
-        // Comprobar expiracion del token
-        if(payload.exp <= moment().unix()){
+        if (payload.exp <= moment().unix()) {
+            console.log("Token expirado");
             return res.status(401).send({
                 status: "error",
                 message: "Token expirado"
             });
         }
 
-        // Agregar datos de usuario a request
         req.user = payload;
-
-    }catch(error){
+    } catch (error) {
+        console.log("Error al decodificar el token:", error);
         return res.status(404).send({
             status: "error",
             message: "Token invalido",
@@ -43,7 +43,5 @@ exports.auth = (req, res, next) => {
         });
     }
 
-    // Pasar a ejecucion de accion
     next();
-}
-
+};

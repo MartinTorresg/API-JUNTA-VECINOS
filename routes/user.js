@@ -13,6 +13,7 @@ router.put("/update", check.auth, UserController.update);
 router.post("/cambiar-contrasena", check.auth, UserController.cambiarContraseña);
 router.get("/total-users", UserController.getTotalUsers);
 router.get("/kpi-registro-vecinos", UserController.getKPIRegistroVecinos);
+router.get("/descargar-certificado", check.auth, UserController.descargarCertificadoUsuario);
 
 
 // Exportar router
