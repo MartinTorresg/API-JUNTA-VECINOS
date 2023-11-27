@@ -12,5 +12,6 @@ router.get("/certificados", CertificadoControlador.listar_certificados);
 router.get("/certificado/:id", CertificadoControlador.uno_certificado);
 router.delete("/borrar_certificado/:id", CertificadoControlador.borrar_certificado);
 router.post('/enviar_certificado', CertificadoControlador.enviar_certificado);
+router.post('/enviarCorreoRechazoCertificado', CertificadoControlador.enviarCorreoRechazoCertificado);
 
 module.exports = router;

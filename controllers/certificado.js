@@ -243,6 +243,29 @@ const enviar_certificado = async (req, res) => {
     }
 };
 
+// En tu controlador de certificados
+const enviarCorreoRechazoCertificado = (req, res) => {
+    const { email, mensaje } = req.body;
+
+    const mailOptions = {
+        from: 'not.timmy49@gmail.com', // Tu correo electrónico
+        to: email,
+        subject: 'Rechazo de Certificado',
+        text: `Hola,\n\nLamentamos informarte que tu certificado ha sido rechazado por la siguiente razón: \n\n${mensaje}\n\nSi tienes preguntas o necesitas más información, por favor contáctanos.\n\nSaludos,\nEl Equipo`
+    };
+
+    transporter.sendMail(mailOptions, function(error, info) {
+        if (error) {
+            console.log('Error al enviar el correo de rechazo: ', error);
+            res.status(500).send({ status: "error", message: "Error al enviar el correo" });
+        } else {
+            console.log('Correo de rechazo enviado: ', info.response);
+            res.status(200).send({ status: "success", message: "Correo de rechazo enviado" });
+        }
+    });
+};
+
+
 // Exportar acciones
 module.exports = {
     pruebaCertificado,
@@ -250,5 +273,6 @@ module.exports = {
     uno_certificado,
     listar_certificados,
     borrar_certificado,
-    enviar_certificado 
+    enviar_certificado,
+    enviarCorreoRechazoCertificado
 }; 
