@@ -10,6 +10,7 @@ router.get("/profile/:id", InscripcionController.profile);
 router.get("/inscripciones/:page?", InscripcionController.listar_inscripciones);
 router.post('/cambiar-estado', InscripcionController.cambiarEstado);
 router.delete('/borrar-inscripcion/:id', InscripcionController.borrarInscripcion);
+router.post('/enviarCorreo', InscripcionController.enviarCorreoRechazo);
 
 // Exportar router
 module.exports = router;

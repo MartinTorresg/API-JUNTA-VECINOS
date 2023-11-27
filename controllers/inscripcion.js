@@ -153,14 +153,46 @@ const cambiarEstado = async (req, res) => {
     }
 };
 
+// Asegúrate de importar Nodemailer
+const nodemailer = require('nodemailer');
+
+// Configuración de Nodemailer (usar tu configuración real)
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'not.timmy49@gmail.com', // Reemplazar con tu correo electrónico real
+        pass: 'abyi wpap zbfp lamo' // Reemplazar con tu contraseña real
+    },
+    tls: {
+        rejectUnauthorized: false
+    }
+});
+
+// Función para enviar correo electrónico de rechazo
+const enviarCorreoRechazo = (email, mensaje) => {
+    const mailOptions = {
+        from: 'not.timmy49@gmail.com', // Tu correo electrónico
+        to: email,
+        subject: 'Inscripción Rechazada',
+        text: `Hola,\n\nLamentamos informarte que tu inscripción ha sido rechazada por la siguiente razón: \n\n${mensaje}\n\nSi tienes preguntas o necesitas más información, por favor contáctanos.\n\nSaludos,\nEl Equipo`
+    };
+
+    transporter.sendMail(mailOptions, function(error, info) {
+        if (error) {
+            console.log('Error al enviar el correo de rechazo: ', error);
+            return false;
+        } else {
+            console.log('Correo de rechazo enviado: ', info.response);
+            return true;
+        }
+    });
+};
+
 const borrarInscripcion = (req, res) => {
-    // Recoger el ID de la inscripción a borrar
     const id = req.params.id;
 
-    // Eliminar la inscripción
     Inscripcion.findByIdAndRemove(id, (error, inscripcionBorrada) => {
         if (error) {
-            // Manejar error del servidor
             return res.status(500).send({
                 status: "error",
                 message: "Error al borrar la inscripción"
@@ -168,20 +200,22 @@ const borrarInscripcion = (req, res) => {
         }
 
         if (!inscripcionBorrada) {
-            // Manejar el caso de inscripción no encontrada
             return res.status(404).send({
                 status: "error",
                 message: "No se ha encontrado la inscripción a borrar"
             });
         }
 
-        // Devolver respuesta
+        // Envío de correo de rechazo
+        enviarCorreoRechazo(inscripcionBorrada.email, "Motivo del rechazo...");
+
         return res.status(200).send({
             status: "success",
             inscripcion: inscripcionBorrada
         });
     });
 }
+
 
 
 
@@ -193,5 +227,6 @@ module.exports = {
     listar_inscripciones,
     uno,
     cambiarEstado,
+    enviarCorreoRechazo,
     borrarInscripcion
 }
