@@ -29,6 +29,8 @@ const rutas_actividad = require("./routes/actividad");
 const rutas_certificado = require("./routes/certificado");
 const rutasRegiones = require("./routes/region");
 const rutasComunas = require("./routes/comuna");
+const rutasEspacios = require("./routes/espacio");
+const rutasReserva = require("./routes/reserva")
 
 // Cargo las rutas
 app.use("/api/user", UserRoutes);
@@ -39,6 +41,8 @@ app.use("/api/actividad", rutas_actividad);
 app.use("/api/certificado", rutas_certificado);
 app.use("/api/regiones", rutasRegiones);
 app.use("/api/comunas", rutasComunas);
+app.use("/api/espacio", rutasEspacios);
+app.use("api/reserva", rutasReserva);
 
 // Ruta de prueba
 app.get("/ruta-prueba", (req, res) => {

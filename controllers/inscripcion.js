@@ -190,6 +190,7 @@ const enviarCorreoRechazo = (email, mensaje) => {
 
 const borrarInscripcion = (req, res) => {
     const id = req.params.id;
+    const mensajeRechazo = req.body.mensajeRechazo;
 
     Inscripcion.findByIdAndRemove(id, (error, inscripcionBorrada) => {
         if (error) {
@@ -206,15 +207,21 @@ const borrarInscripcion = (req, res) => {
             });
         }
 
-        // Envío de correo de rechazo
-        enviarCorreoRechazo(inscripcionBorrada.email, "Motivo del rechazo...");
+        // Asegúrate de que la dirección de correo electrónico exista
+        if (inscripcionBorrada.email) {
+            enviarCorreoRechazo(inscripcionBorrada.email, mensajeRechazo);
+        } else {
+            console.log('No se ha definido la dirección de correo electrónico');
+        }
 
         return res.status(200).send({
             status: "success",
             inscripcion: inscripcionBorrada
         });
     });
-}
+};
+
+
 
 
 
