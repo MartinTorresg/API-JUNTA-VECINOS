@@ -28,20 +28,84 @@ const obtenerEspacio = async (req, res) => {
     }
 };
 
+// Funciones auxiliares
+const convertirAHoras = (horaStr) => {
+    if (typeof horaStr !== 'string' || !horaStr.includes(':')) {
+      throw new Error('Argumento inválido para convertirAHoras:', horaStr);
+    }
+  
+    const [horas, minutos] = horaStr.split(':').map(Number);
+    const fecha = new Date();
+    fecha.setHours(horas, minutos, 0, 0);
+    return fecha;
+  };
+  
+
+const convertirAString = (fecha) => {
+    return fecha.toTimeString().substring(0, 5);
+};
+
+const generarHorariosDisponibles = (horaInicioStr, horaFinStr) => {
+    const horaInicio = convertirAHoras(horaInicioStr);
+    const horaFin = convertirAHoras(horaFinStr);
+
+    let horarios = [];
+    let horaActual = new Date(horaInicio.getTime());
+
+    while (horaActual < horaFin) {
+        let horaBloqueFin = new Date(horaActual.getTime());
+        horaBloqueFin.setHours(horaBloqueFin.getHours() + 1);
+
+        if (horaBloqueFin > horaFin) {
+            horaBloqueFin = new Date(horaFin.getTime());
+        }
+
+        horarios.push({
+            inicio: convertirAString(horaActual),
+            fin: convertirAString(horaBloqueFin),
+        });
+
+        horaActual.setHours(horaActual.getHours() + 1);
+    }
+
+    return horarios;
+};
 
 // Crear un nuevo espacio
 const crearEspacio = async (req, res) => {
     try {
-        console.log("Creando espacio con datos:", req.body);
+        console.log("Datos recibidos para crear espacio:", req.body);
+        
+        const { horarioInicio, horarioFin } = req.body;
+
+        // Agrega un chequeo para asegurarte de que horarioInicio y horarioFin son cadenas de texto
+        if (typeof horarioInicio !== 'string' || typeof horarioFin !== 'string') {
+            return res.status(400).json({
+                mensaje: 'Datos de horario inválidos',
+            });
+        }
+
+        // Intenta generar los horarios disponibles
+        try {
+            req.body.horariosDisponibles = generarHorariosDisponibles(horarioInicio, horarioFin);
+        } catch (error) {
+            console.error("Error al generar horarios disponibles:", error);
+            return res.status(400).json({
+                mensaje: 'Error al procesar los horarios',
+                detalle: error.message,
+            });
+        }
+
         const nuevoEspacio = new Espacio(req.body);
         await nuevoEspacio.save();
-        console.log("Espacio creado con éxito:", nuevoEspacio);
         res.status(201).json({ mensaje: 'Espacio creado con éxito', espacio: nuevoEspacio });
     } catch (error) {
         console.error("Error al crear el espacio:", error);
         res.status(500).json({ mensaje: "Error al crear el espacio", error });
     }
 };
+
+
 
 
 // Actualizar un espacio existente
@@ -80,5 +144,9 @@ module.exports = {
     obtenerEspacio,
     crearEspacio,
     actualizarEspacio,
-    eliminarEspacio
+    eliminarEspacio,
+    convertirAHoras,
+    convertirAString,
+    generarHorariosDisponibles
+
 };

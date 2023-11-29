@@ -13,11 +13,20 @@ const EspacioSchema = new Schema({
         type: Number,
         required: true
     },
-    horariosDisponibles: {
-        type: Map,
-        of: Boolean, // Puede ser un mapa que indica la disponibilidad por horas/días
-        required: true
-    },
+    horariosDisponibles: [{
+        inicio: {
+            type: String, // o Date, si prefieres trabajar con objetos de fecha/hora
+            required: true
+        },
+        fin: {
+            type: String, // o Date
+            required: true
+        },
+        reservado: {
+            type: Boolean,
+            default: false
+        }
+    }]
     // Otras propiedades que consideres necesarias
 });
 
