@@ -42,7 +42,7 @@ app.use("/api/certificado", rutas_certificado);
 app.use("/api/regiones", rutasRegiones);
 app.use("/api/comunas", rutasComunas);
 app.use("/api/espacio", rutasEspacios);
-app.use("api/reserva", rutasReserva);
+app.use("/api/reserva", rutasReserva);
 
 // Ruta de prueba
 app.get("/ruta-prueba", (req, res) => {

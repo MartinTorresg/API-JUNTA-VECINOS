@@ -1,11 +1,14 @@
 const express = require("express");
 const router = express.Router();
-const ReservasController = require("../controllers/reserva");
+const ReservaController = require("../controllers/reserva"); // Asegúrate de que la ruta sea correcta
 
-// Rutas para Reservas
-router.post("/reservas", ReservasController.crearReserva);
-router.get("/reservas/usuario/:userId", ReservasController.listarReservasPorUsuario);
-router.put("/reservas/:id/cancelar", ReservasController.cancelarReserva);
-router.get('/reservas-historial', ReservasController.listarTodasLasReservas); // Temporalmente abierto para todos
+// Rutas de reservas
+router.post("/reservas", ReservaController.crearReserva);
+router.get("/reservas/usuario/:userId", ReservaController.listarReservasPorUsuario);
+router.put("/reservas/:id/cancelar", ReservaController.cancelarReserva);
+router.get('/reservas-historial', ReservaController.listarTodasLasReservas); // Temporalmente abierto para todos
+router.get('/reservas/detalle/:id', ReservaController.obtenerDetalleReserva);
 
+
+// Exportar router
 module.exports = router;
