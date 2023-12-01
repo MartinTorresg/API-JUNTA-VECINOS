@@ -273,10 +273,12 @@ const update = (req, res) => {
 
 // Método para cambiar la contraseña
 const cambiarContraseña = async (req, res) => {
+    console.log("Iniciando el proceso de cambio de contraseña");
     const userId = req.user.id; // Asumiendo que el ID del usuario viene del token de autenticación
     const { passwordActual, nuevaPassword } = req.body;
 
     if (!passwordActual || !nuevaPassword) {
+        console.log("Error: Faltan datos por enviar");
         return res.status(400).json({
             status: "error",
             message: "Faltan datos por enviar",
@@ -284,45 +286,53 @@ const cambiarContraseña = async (req, res) => {
     }
 
     try {
+        console.log(`Buscando usuario con ID: ${userId}`);
         // Buscar el usuario por ID
         const usuario = await User.findById(userId);
 
         if (!usuario) {
+            console.log("Error: Usuario no encontrado");
             return res.status(404).json({
                 status: "error",
                 message: "Usuario no encontrado",
             });
         }
 
+        console.log("Verificando la contraseña actual");
         // Verificar la contraseña actual
         const passwordCorrecta = await bcrypt.compare(passwordActual, usuario.password);
         if (!passwordCorrecta) {
+            console.log("Error: La contraseña actual es incorrecta");
             return res.status(400).json({
                 status: "error",
                 message: "La contraseña actual es incorrecta",
             });
         }
 
+        console.log("Cifrando la nueva contraseña");
         // Cifrar la nueva contraseña
         const passwordCifrada = await bcrypt.hash(nuevaPassword, 10);
 
+        console.log("Actualizando la contraseña del usuario");
         // Actualizar la contraseña del usuario
         usuario.password = passwordCifrada;
         await usuario.save();
 
+        console.log("Contraseña cambiada con éxito");
         return res.status(200).json({
             status: "success",
             message: "Contraseña cambiada con éxito",
         });
 
     } catch (error) {
-        console.log(error);
+        console.error("Error durante el proceso de cambio de contraseña", error);
         return res.status(500).json({
             status: "error",
             message: "Error en el servidor",
         });
     }
 };
+
 
 const getTotalUsers = async (req, res) => {
     try {
