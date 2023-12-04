@@ -1,5 +1,7 @@
 const { validarProyecto } = require("../helpers/validar");
 const Proyecto = require("../models/proyecto");
+const fs = require('fs');
+const nodemailer = require('nodemailer');
 
 const prueba = (req, res) => {
 
@@ -8,49 +10,117 @@ const prueba = (req, res) => {
     });
 }
 
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'not.timmy49@gmail.com', // Tu dirección de correo electrónico de Gmail
+        pass: 'abyi wpap zbfp lamo', // Tu contraseña de Gmail
+    },
+    tls: {
+        rejectUnauthorized: false // Aceptar certificados autofirmados
+    }
+});
 
-const crear_proyecto = (req, res) => {
 
-    // Recoger parametros por post a guardar
-    let parametros = req.body;
+const crear_proyecto = async (req, res) => {
+    console.log('Inicio de crear_proyecto con los datos recibidos:', req.body);
 
-    // Validar datos
+    // Desestructurar req.body para obtener los datos, incluyendo el ID del usuario
+    const { user, nombre, descripcion, estado, presupuesto, presupuestoGastado, archivos } = req.body;
+
+    // Puedes agregar más campos si tu modelo de Proyecto los requiere
+
+    console.log('Datos extraídos de req.body:', { user, nombre, descripcion, estado, presupuesto, presupuestoGastado, archivos });
+
+    // Validar datos (asegúrate de que tu función validarProyecto maneje todos los campos necesarios)
     try {
-        validarProyecto(parametros);
-
+        validarProyecto(req.body);
     } catch (error) {
+        console.error('Error de validación:', error);
         return res.status(400).json({
             status: "error",
-            mensaje: "Faltan datos por enviar"
+            mensaje: "Faltan datos por enviar o datos inválidos",
+            error: error.message
         });
     }
 
-    // Crear el objeto a guardar
-    const proyecto = new Proyecto(parametros);
-
-    // Asignar valores a objeto basado en el modelo (manual o automatico)
-    //proyecto.nombre = parametros.nombre;
-
-    // Guardar el proyecto en la base de datos
-    proyecto.save((error, proyectoGuardado) => {
-
-        if (error || !proyectoGuardado) {
-            return res.status(400).json({
-                status: "error",
-                mensaje: "No se ha guardado el artículo"
-            });
-        }
-
-        // Devolver resultado
-        return res.status(200).json({
-            status: "success",
-            proyecto: proyectoGuardado,
-            mensaje: "Proyecto creado con exito!!"
-        })
-
+    // Crear el objeto a guardar con los datos desestructurados
+    const proyecto = new Proyecto({
+        user, // Esto asignará el ID del usuario al proyecto, asumiendo que tu modelo Proyecto tiene un campo 'user'
+        nombre,
+        descripcion,
+        estado,
+        presupuesto,
+        presupuestoGastado,
+        archivos // Asegúrate de que tu modelo maneje este campo si es necesario
     });
 
-}
+    console.log('Proyecto a guardar:', proyecto);
+
+    // Intentar guardar el proyecto en la base de datos
+    try {
+        const proyectoGuardado = await proyecto.save();
+        console.log('Proyecto guardado con éxito:', proyectoGuardado);
+        res.status(201).json({
+            status: "success",
+            proyecto: proyectoGuardado,
+            mensaje: "Proyecto creado con éxito"
+        });
+    } catch (error) {
+        console.error('Error al guardar el proyecto:', error);
+        res.status(500).json({
+            status: "error",
+            mensaje: "Error al guardar el proyecto",
+            error: error
+        });
+    }
+};
+
+
+const subirArchivos = async (req, res) => {
+    if (!req.files || req.files.length === 0) {
+        console.log('No se recibieron archivos en la solicitud.');
+        return res.status(400).send('No se subieron archivos.');
+    }
+
+    console.log('Archivos recibidos:', req.files);
+    const proyectoId = req.body.proyectoId;
+    if (!proyectoId) {
+        console.log('No se proporcionó proyectoId en la solicitud.');
+        return res.status(400).send('Falta proyectoId en la solicitud.');
+    }
+
+    try {
+        console.log('Buscando proyecto con ID:', proyectoId);
+        const proyecto = await Proyecto.findById(proyectoId);
+        if (!proyecto) {
+            console.log('Proyecto no encontrado con ID:', proyectoId);
+            return res.status(404).send('Proyecto no encontrado.');
+        }
+
+        const archivosSubidos = req.files.map(file => ({
+            nombre: file.originalname,
+            path: file.path,
+            mimetype: file.mimetype,
+            size: file.size
+        }));
+
+        console.log('Archivos a subir:', archivosSubidos);
+
+        if (proyecto.archivos && Array.isArray(proyecto.archivos)) {
+            proyecto.archivos.push(...archivosSubidos);
+        } else {
+            proyecto.archivos = archivosSubidos;
+        }
+
+        await proyecto.save();
+        console.log('Archivos subidos y guardados con éxito para el proyecto:', proyectoId);
+        res.json({ message: 'Archivos subidos con éxito' });
+    } catch (error) {
+        console.error('Error al subir archivos:', error);
+        res.status(500).send('Error al guardar los archivos en la base de datos.');
+    }
+};
 
 const listar_proyecto = (req, res) => {
 
@@ -256,9 +326,102 @@ const getProyectosPorEstado = async (req, res) => {
     }
 };
 
+const actualizarProyecto = async (req, res) => {
+    const { id } = req.params;
+    // Asegúrate de incluir todos los campos que esperas actualizar desde el frontend
+    const { descripcion, presupuesto, estado, presupuestoGastado } = req.body;
+
+    try {
+        const datosActualizados = {
+            descripcion,
+            presupuesto,
+            // Solo actualiza el estado y el presupuesto gastado si se proporcionan
+            ...(estado && { estado }),
+            ...(presupuestoGastado && { presupuestoGastado }),
+        };
+
+        // Encuentra el proyecto por ID y actualiza
+        const proyectoActualizado = await Proyecto.findByIdAndUpdate(id, datosActualizados, { new: true });
+
+        if (!proyectoActualizado) {
+            console.log(`Proyecto con id ${id} no encontrado.`);
+            return res.status(404).json({ status: 'error', message: 'Proyecto no encontrado' });
+        }
+
+        console.log(`Proyecto con id ${id} ha sido actualizado.`);
+        res.json({ status: 'success', proyecto: proyectoActualizado });
+    } catch (error) {
+        console.error(`Error al actualizar el proyecto con id ${id}:`, error);
+        res.status(500).json({ status: 'error', message: 'Error al actualizar el proyecto' });
+    }
+};
+
+
+const obtenerArchivosProyecto = async (req, res) => {
+    try {
+        const proyectoId = req.params.id;
+        console.log(`Obteniendo archivos para el proyecto con ID: ${proyectoId}`);
+
+        const proyecto = await Proyecto.findById(proyectoId).select('archivos');
+
+        if (!proyecto) {
+            console.log(`Proyecto no encontrado con ID: ${proyectoId}`);
+            return res.status(404).send('Proyecto no encontrado.');
+        }
+
+        console.log(`Archivos encontrados para el proyecto:`, proyecto.archivos);
+        res.status(200).json({
+            status: 'success',
+            archivos: proyecto.archivos
+        });
+    } catch (error) {
+        console.error('Error al obtener archivos del proyecto:', error);
+        res.status(500).send('Error al obtener archivos del proyecto.');
+    }
+};
+
+const eliminarArchivo = async (req, res) => {
+    const { archivoId, proyectoId } = req.params; // Asumiendo que envías el ID del archivo y del proyecto
+
+    try {
+        // Encuentra el proyecto y el archivo
+        const proyecto = await Proyecto.findById(proyectoId);
+        if (!proyecto) {
+            return res.status(404).send('Proyecto no encontrado.');
+        }
+
+        const archivo = proyecto.archivos.id(archivoId);
+        if (!archivo) {
+            return res.status(404).send('Archivo no encontrado.');
+        }
+
+        // Eliminar archivo del sistema de archivos
+        fs.unlink(archivo.path, (err) => {
+            if (err) {
+                console.error('Error al eliminar el archivo del sistema de archivos:', err);
+                return res.status(500).send('Error al eliminar el archivo del sistema de archivos.');
+            }
+
+            // Eliminar la referencia del archivo en la base de datos
+            archivo.remove();
+            proyecto.save((err) => {
+                if (err) {
+                    console.error('Error al actualizar el proyecto:', err);
+                    return res.status(500).send('Error al actualizar el proyecto.');
+                }
+                res.send('Archivo eliminado con éxito.');
+            });
+        });
+    } catch (error) {
+        console.error('Error al eliminar archivo:', error);
+        res.status(500).send('Error al eliminar archivo.');
+    }
+};
+
 module.exports = {
     prueba,
     crear_proyecto,
+    subirArchivos,
     listar_proyecto,
     uno,
     borrar,
@@ -266,5 +429,8 @@ module.exports = {
     buscador,
     getKPITasaFinalizacionProyectos,
     actualizarEstado,
-    getProyectosPorEstado
+    getProyectosPorEstado,
+    actualizarProyecto,
+    obtenerArchivosProyecto,
+    eliminarArchivo
 }

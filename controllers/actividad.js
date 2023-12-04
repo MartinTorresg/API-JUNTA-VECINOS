@@ -11,8 +11,11 @@ const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
         user: 'not.timmy49@gmail.com', // Tu dirección de correo electrónico de Gmail
-        pass: 'plus123asd', // Tu contraseña de Gmail
+        pass: 'abyi wpap zbfp lamo', // Tu contraseña de Gmail
     },
+    tls: {
+        rejectUnauthorized: false // Aceptar certificados autofirmados
+    }
 });
 
 const pruebaActividad = (req, res) => {
@@ -23,34 +26,38 @@ const pruebaActividad = (req, res) => {
 }
 
 // Registrar actividad
-const crear_actividad = (req, res) => {
-    // Recoger datos de la petición
-    let parametros = req.body;
+const crear_actividad = async (req, res) => {
+    // Suponiendo que el ID del usuario se obtiene del objeto req, por ejemplo, de req.userId
+    const { user,nombre, fecha, hora, lugar, cupo } = req.body;
+    console.log('req.body:', req.body);
+    console.log('Usuario ID:', user);
 
-    // Comprobar que se envíen los datos necesarios (+ validación)
-    if (!parametros.nombre || !parametros.fecha || !parametros.lugar || !parametros.cupo) {
-        return res.status(400).json({
-            status: "error",
-            message: "Faltan datos por enviar",
+    console.log('Inicio de la función crear_actividad con los datos:', { user, nombre, fecha, lugar, cupo });
+
+    try {
+        // Aquí, puedes agregar verificaciones adicionales según sea necesario
+
+        // Crear objeto de actividad
+        const actividad = new Actividad({
+            nombre,
+            fecha,
+            hora,
+            lugar,
+            cupo,
+            user  // Asignar el ID del usuario a la actividad
         });
+
+        console.log('Actividad creada (antes de guardar):', actividad);
+        await actividad.save();
+        console.log('Actividad guardada con éxito.');
+
+        res.status(201).json(actividad);
+    } catch (error) {
+        console.error('Se ha producido un error al crear la actividad:', error);
+        res.status(500).json({ message: "Error al crear la actividad", error });
     }
+};
 
-    // Crear objeto de actividad
-    let actividad = new Actividad(parametros);
-
-    // Guardar la actividad en la base de datos
-    actividad.save((error, actividadGuardada) => {
-        if (error || !actividadGuardada) {
-            return res.status(500).send({ status: "error", message: "Error al guardar la actividad" });
-        }
-        // Devolver resultado
-        return res.status(200).json({
-            status: "success",
-            message: "Actividad registrada correctamente",
-            actividad: actividadGuardada
-        });
-    });
-}
 
 const uno = (req, res) => {
     // Recoger un ID por la URL
@@ -163,25 +170,25 @@ const actividadesPorFecha = (req, res) => {
         },
         estado: 'aprobada' // Filtrar solo actividades aprobadas
     })
-    .exec((error, actividades) => {
-        if (error) {
-            return res.status(500).json({
-                status: "error",
-                message: "Error al buscar actividades",
-                error: error
-            });
-        }
-        if (!actividades || actividades.length === 0) {
-            return res.status(404).json({
+        .exec((error, actividades) => {
+            if (error) {
+                return res.status(500).json({
+                    status: "error",
+                    message: "Error al buscar actividades",
+                    error: error
+                });
+            }
+            if (!actividades || actividades.length === 0) {
+                return res.status(404).json({
+                    status: "success",
+                    message: "No se encontraron actividades para la fecha especificada"
+                });
+            }
+            return res.status(200).json({
                 status: "success",
-                message: "No se encontraron actividades para la fecha especificada"
+                actividades: actividades
             });
-        }
-        return res.status(200).json({
-            status: "success",
-            actividades: actividades
         });
-    });
 };
 
 

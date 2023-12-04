@@ -76,19 +76,6 @@ const listarReservasPorUsuario = async (req, res) => {
     }
 };
 
-// Cancelar una reserva
-const cancelarReserva = async (req, res) => {
-    try {
-        const reservaCancelada = await Reserva.findByIdAndUpdate(req.params.id, { estadoReserva: 'cancelada' }, { new: true });
-        if (!reservaCancelada) {
-            return res.status(404).json({ mensaje: 'Reserva no encontrada' });
-        }
-        res.status(200).json({ mensaje: 'Reserva cancelada con éxito', reserva: reservaCancelada });
-    } catch (error) {
-        res.status(500).json({ mensaje: "Error al cancelar la reserva", error });
-    }
-};
-
 const listarTodasLasReservas = async (req, res) => {
     try {
         // Filtra solo las reservas confirmadas
@@ -134,11 +121,73 @@ const obtenerDetalleReserva = async (req, res) => {
     }
 };
 
+const listarReservasPendientes = async (req, res) => {
+    try {
+        // Filtra solo las reservas pendientes
+        const reservasPendientes = await Reserva.find({ estadoReserva: 'pendiente' })
+            .populate('usuario', 'name') // Asumiendo que quieres el nombre del usuario
+            .populate('espacio', 'nombre'); // Asumiendo que quieres el nombre del espacio
+
+        console.log("Reservas Pendientes encontradas:", reservasPendientes);
+        res.status(200).json({
+            ok: true,
+            reservas: reservasPendientes
+        });
+    } catch (error) {
+        console.error("Error al obtener las reservas pendientes:", error);
+        res.status(500).json({
+            ok: false,
+            mensaje: "Error al obtener las reservas pendientes",
+            error: error.message
+        });
+    }
+};
+
+const confirmarReserva = async (req, res) => {
+    try {
+      const { id } = req.params; // Obtiene el ID de la reserva desde la URL
+      // Actualiza la reserva para establecer el estado en 'confirmada'
+      const reservaActualizada = await Reserva.findByIdAndUpdate(id, {
+        estadoReserva: 'confirmada'
+      }, { new: true }); // { new: true } es para que retorne el documento actualizado
+  
+      if (!reservaActualizada) {
+        return res.status(404).json({ ok: false, mensaje: 'Reserva no encontrada' });
+      }
+  
+      // Enviar respuesta exitosa
+      res.json({ ok: true, mensaje: 'Reserva confirmada con éxito', reserva: reservaActualizada });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ ok: false, mensaje: 'Error al confirmar la reserva' });
+    }
+  };
+
+  const cancelarReserva = async (req, res) => {
+    try {
+        const { id } = req.params; // Obtiene el ID de la reserva desde la URL
+
+        // Elimina la reserva
+        const reservaEliminada = await Reserva.findByIdAndRemove(id);
+
+        if (!reservaEliminada) {
+            return res.status(404).json({ ok: false, mensaje: 'Reserva no encontrada' });
+        }
+
+        // Enviar respuesta exitosa
+        res.json({ ok: true, mensaje: 'Reserva cancelada con éxito' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, mensaje: 'Error al cancelar la reserva' });
+    }
+};
 
 module.exports = {
     crearReserva,
     listarReservasPorUsuario,
     cancelarReserva,
     listarTodasLasReservas,
-    obtenerDetalleReserva
+    obtenerDetalleReserva,
+    listarReservasPendientes,
+    confirmarReserva
 };

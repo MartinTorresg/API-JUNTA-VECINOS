@@ -440,6 +440,61 @@ const descargarCertificadoUsuario = async (req, res) => {
     }
 };
 
+const getKRIIndiceInactividad = async (req, res) => {
+    try {
+        const totalVecinos = 500; // Sustituye este valor por el total real de vecinos de tu unidad territorial
+        const umbralInactividad = new Date(); // Define el umbral de inactividad, por ejemplo hace 6 meses
+        umbralInactividad.setMonth(umbralInactividad.getMonth() - 1);
+
+        // Calcular el número de vecinos inactivos (registrados antes del umbral de inactividad)
+        const totalUsuariosInactivos = await User.countDocuments({ createdAt: { $lt: umbralInactividad } });
+        const indiceInactividadActual = (totalUsuariosInactivos / totalVecinos) * 100;
+
+        // Obtener datos históricos de inactividad
+        const historialInactividad = await User.aggregate([
+            {
+                $group: {
+                    _id: { 
+                        year: { $year: "$createdAt" },
+                        month: { $month: "$createdAt" }
+                    },
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    year: "$_id.year",
+                    month: "$_id.month",
+                    count: 1
+                }
+            },
+            { $sort: { year: 1, month: 1 } } // Ordenar los datos por año y mes
+        ]);
+
+        // Convertir el recuento a un índice de inactividad
+        const historialIndice = historialInactividad
+            .filter(item => new Date(item.year, item.month - 1) < umbralInactividad) // Filtrar los registros anteriores al umbral de inactividad
+            .map(item => ({
+                fecha: `${item.year}-${String(item.month).padStart(2, '0')}`, // Asegúrate de formatear la fecha correctamente
+                indice: (item.count / totalVecinos) * 100
+            }));
+
+        res.status(200).json({
+            status: "success",
+            valorActual: indiceInactividadActual.toFixed(2),
+            historial: historialIndice
+        });
+    } catch (error) {
+        res.status(500).send({
+            status: "error",
+            message: "Error al obtener los datos del KRI",
+            error
+        });
+    }
+};
+
+
 
 
 // Exportar acciones
@@ -453,5 +508,6 @@ module.exports = {
     getTotalUsers,
     getKPIRegistroVecinos,
     descargarCertificadoUsuario,
-    generarPDF
+    generarPDF,
+    getKRIIndiceInactividad
 }

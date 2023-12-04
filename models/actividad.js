@@ -27,7 +27,8 @@ const ActividadSchema = Schema({
         type: String,
         enum: estadosValidos,
         default: 'pendiente'
-    },user: {
+    },
+    user: {
         type: Schema.Types.ObjectId,
         ref: "User"
     }
