@@ -35,6 +35,9 @@ router.put('/proyecto/modificar/:id', ProyectoControlador.actualizarProyecto);
 router.post('/subir', upload.array('archivos', 5), ProyectoControlador.subirArchivos);
 router.get('/proyecto/:id/archivos', ProyectoControlador.obtenerArchivosProyecto);
 router.delete('/proyecto/:proyectoId/archivo/:archivoId', ProyectoControlador.eliminarArchivo);
+router.post('/rechazar/:id', ProyectoControlador.rechazarProyecto);
+router.get('/datos-desviacion-presupuesto', ProyectoControlador.getDatosDesviacionPresupuesto);
+
 
 
 

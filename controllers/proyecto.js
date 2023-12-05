@@ -239,26 +239,28 @@ const buscador = (req, res) => {
     let busqueda = req.params.busqueda;
 
     // Find OR 
-    Proyecto.find({ "$or": [
-        { "nombre": { "$regex": busqueda, "$options": "i"}},
-        { "descripcion": { "$regex": busqueda, "$options": "i"}},
-    ]})
-    .sort({fecha: -1})
-    .exec((error, proyectosEncontrados) => {
+    Proyecto.find({
+        "$or": [
+            { "nombre": { "$regex": busqueda, "$options": "i" } },
+            { "descripcion": { "$regex": busqueda, "$options": "i" } },
+        ]
+    })
+        .sort({ fecha: -1 })
+        .exec((error, proyectosEncontrados) => {
 
-        if(error || !proyectosEncontrados || proyectosEncontrados.length <= 0){
-            return res.status(404).json({
-                status: "error",
-                mensaje: "No se han encontrado proyectos"
-            });
-        }
+            if (error || !proyectosEncontrados || proyectosEncontrados.length <= 0) {
+                return res.status(404).json({
+                    status: "error",
+                    mensaje: "No se han encontrado proyectos"
+                });
+            }
 
 
-        return res.status(200).json({
-            status: "success",
-            proyectos: proyectosEncontrados
-        })
-    });
+            return res.status(200).json({
+                status: "success",
+                proyectos: proyectosEncontrados
+            })
+        });
 }
 
 const getKPITasaFinalizacionProyectos = async (req, res) => {
@@ -418,6 +420,81 @@ const eliminarArchivo = async (req, res) => {
     }
 };
 
+const rechazarProyecto = async (req, res) => {
+    try {
+        const proyectoId = req.params.id;
+        const { motivo } = req.body; // Recibir el motivo del rechazo
+
+        // Encontrar el proyecto y obtener detalles del usuario que creó el proyecto
+        const proyecto = await Proyecto.findById(proyectoId).populate('user');
+        if (!proyecto) {
+            return res.status(404).json({ status: 'error', message: 'Proyecto no encontrado' });
+        }
+
+        // Actualizar el estado del proyecto a "rechazado"
+        proyecto.estado = "Rechazado";
+        await proyecto.save();
+        console.log(`Proyecto con id ${proyectoId} ha sido actualizado a rechazado.`);
+
+        // Obtener el correo electrónico del usuario asociado al proyecto
+        const usuarioEmail = proyecto.user.email;
+
+        // Preparar y enviar el correo electrónico al usuario
+        const mailOptions = {
+            from: 'not.timmy49@gmail.com', // Tu dirección de correo electrónico de Gmail
+            to: usuarioEmail, // La dirección de correo electrónico del usuario
+            subject: 'Tu proyecto ha sido rechazado',
+            text: `Tu proyecto ha sido rechazado por el siguiente motivo: ${motivo}`,
+        };
+
+        await transporter.sendMail(mailOptions);
+
+        // Opcional: Eliminar el proyecto si es lo que deseas
+        await Proyecto.findByIdAndRemove(proyectoId);
+        console.log(`Proyecto con id ${proyectoId} ha sido eliminado.`);
+
+        res.status(200).json({ status: 'success', message: 'Proyecto rechazado correctamente' });
+    } catch (error) {
+        console.error('Error al rechazar el proyecto:', error);
+        res.status(500).json({ status: 'error', message: 'Error al rechazar el proyecto' });
+    }
+};
+
+const getDatosDesviacionPresupuesto = async (req, res) => {
+    try {
+        // Obtener solo los proyectos con estado "Finalizado"
+        const proyectosFinalizados = await Proyecto.find({ estado: "Finalizado" });
+
+        // Calcular la desviación para cada proyecto finalizado y la desviación total
+        let sumaDesviacion = 0;
+        let sumaPresupuestoPlanificado = 0;
+
+        const proyectosConDesviacion = proyectosFinalizados.map(proyecto => {
+            const desviacion = proyecto.presupuestoGastado - proyecto.presupuesto;
+            sumaDesviacion += desviacion;
+            sumaPresupuestoPlanificado += proyecto.presupuesto;
+
+            return {
+                nombre: proyecto.nombre,
+                desviacion: (desviacion / proyecto.presupuesto) * 100 // Porcentaje de desviación
+            };
+        });
+
+        // Calcular la desviación promedio
+        const desviacionPromedio = sumaPresupuestoPlanificado > 0
+            ? (sumaDesviacion / sumaPresupuestoPlanificado) * 100
+            : 0; // Evita división por cero
+
+        res.status(200).json({
+            desviacion: desviacionPromedio.toFixed(2), // Redondear a dos decimales
+            proyectos: proyectosConDesviacion
+        });
+    } catch (error) {
+        console.error('Error al obtener los datos de desviación del presupuesto:', error);
+        res.status(500).json({ status: 'error', message: 'Error al obtener los datos de desviación del presupuesto' });
+    }
+};
+
 module.exports = {
     prueba,
     crear_proyecto,
@@ -432,5 +509,7 @@ module.exports = {
     getProyectosPorEstado,
     actualizarProyecto,
     obtenerArchivosProyecto,
-    eliminarArchivo
+    eliminarArchivo,
+    rechazarProyecto,
+    getDatosDesviacionPresupuesto
 }
