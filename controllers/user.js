@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
         user: 'not.timmy49@gmail.com', // Reemplazar con tu correo electrónico
-        pass: 'abyi wpap zbfp lamo' // Reemplazar con tu contraseña
+        pass: 'gsli goni oztz vkzt' // Reemplazar con tu contraseña
     },
     tls: {
         rejectUnauthorized: false

@@ -117,7 +117,7 @@ const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
         user: 'not.timmy49@gmail.com',
-        pass: 'abyi wpap zbfp lamo'
+        pass: 'gsli goni oztz vkzt'
     },
     tls: {
         rejectUnauthorized: false // Aceptar certificados autofirmados
